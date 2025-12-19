@@ -1,0 +1,9 @@
+train: C:\Users\dxzw-xm16\Desktop\yolov8-train\data\train\images
+val: C:\Users\dxzw-xm16\Desktop\yolov8-train\data\train\images
+
+# number of classes
+nc: 1
+
+# class names
+names:
+  - 'person'
