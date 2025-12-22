@@ -4,9 +4,9 @@ from ultralytics import YOLO
 import ffmpeg
 import cv2
 
-model = YOLO("./runs/detect/train/weights/best.pt")
+model = YOLO("runs/detect/train/weights/best.pt")
 
-cap = cv2.VideoCapture("rtsp://admin:dxzw1234@192.168.50.47:554/cam/realmonitor?channel=1$subtype=0")
+cap = cv2.VideoCapture(0)
 
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -16,7 +16,7 @@ if fps is None or fps == 0:
 
 process = ffmpeg.input('pipe:', format='rawvideo', pix_fmt='bgr24', s=f'{width}x{height}',
                  r=fps).output(
-        "rtsp://192.168.50.70:8554/camera2",
+        "rtsp://localhost:8554/camera2",
         format='rtsp',
         rtsp_transport='tcp',  # 使用tcp传输
         vcodec='libx264',
