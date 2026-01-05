@@ -1,12 +1,14 @@
-# YOLOv8模型训练教程+优化思路
+# YOLO模型训练教程+优化思路
 
 ## 前言
 
-本教程将从基础环境搭建入手，逐步引导大家完成YOLOv8模型的训练、测试全流程，并对训练结果进行解读，最后分享实用的优化思路。本教程适合初学者或者是完全不懂的小白，如果操作方法得当是可以训练出工业上可以使用的模型。
+本教程将从基础环境搭建入手，逐步引导大家完成YOLO模型的训练、测试全流程，并对训练结果进行解读，最后分享实用的优化思路。本教程适合初学者或者是完全不懂的小白，希望能带给大家一点帮助。
+
+提示：YOLO官方文档涵盖本篇文章的所有内容，如果大家时间充裕推荐看官方文档进行学习[Ultralytics YOLO 文档](https://docs.ultralytics.com/zh/)。
 
 ## 基础环境
 
-具体所需环境如下：
+基础环境如下：
 
 - Python环境：Python 3.9.21
 - 核心依赖库：
@@ -19,19 +21,19 @@ opencv-python==4.6.0.66
 numpy==1.26.4
 ```
 
-- 视频处理工具(**非必须，当需要测试视频流监测时需要**)：ffmpeg 7.0.2（用于视频流的解码、编码，配合视频测试脚本使用）
-- 流媒体服务工具(**非必须，当需要测试视频流监测时需要**)：mediamtx_v1.11.2_windows_amd64（Windows系统下的流媒体服务器）
+- 视频处理工具(**非必须，测试视频流推理需要**)：ffmpeg 7.0.2（用于视频流的解码、编码，配合视频测试脚本使用）
+- 流媒体服务工具(**非必须，测试视频流推理需要**)：mediamtx_v1.11.2_windows_amd64（Windows系统下的流媒体服务器）
 
 ## 准备阶段
 
-在正式训练模型前，需完成源代码获取、Python环境配置以及项目目录熟悉。具体步骤如下：
+在正式训练模型前，需完成源代码获取、Python环境配置以及项目目录熟悉。
 
 ### 代码准备
 
 本教程使用的YOLOv8训练项目源码已托管至GitHub，可直接下载获取：
 
-- GitHub仓库地址：https://github.com/ObjectKjq/yolov8-train.git
-- 源码直接下载链接：https://codeload.github.com/ObjectKjq/yolov8-train/zip/refs/heads/master
+- GitHub仓库地址：[yolov8-train](https://github.com/ObjectKjq/yolov8-train)
+- 源码直接下载链接：[下载源码](https://codeload.github.com/ObjectKjq/yolov8-train/zip/refs/heads/master)
 
 下载完成后，将压缩包解压至本地指定目录。
 
@@ -39,14 +41,14 @@ numpy==1.26.4
 
 推荐使用conda创建独立的Python环境，避免与其他项目的依赖包冲突。若未安装conda，也可直接使用官方Python安装包配置环境。
 
-1. 基于conda创建环境（推荐）
+1. 基于conda创建环境（**推荐**）
 
 ```sh
 # 创建名为yolov8-train的Python环境，指定Python版本为3.9.21
 conda create -n yolov8-train python=3.9.21
 ```
 
-接下来需要安装PyTorch框架（YOLOv8模型训练的核心依赖），需根据自身显卡型号选择对应版本的PyTorch，具体可参考PyTorch官方指南：https://pytorch.org/get-started/locally/
+接下来需要安装PyTorch框架（YOLOv8模型训练的核心依赖），需根据自身显卡型号选择对应版本的PyTorch，具体可参考PyTorch官方指南：[Get Started](https://pytorch.org/get-started/locally/)
 
 ```sh
 # 进入项目根目录打开控制台，进入当前conda的yolov8-train环境
@@ -59,19 +61,19 @@ pip install -r requirements.txt
 
 2. 无conda环境配置
 
-若未安装conda，可直接下载官方Python 3.9.21安装包：[Windows 版 Python 版本 | Python.org](https://www.python.org/downloads/windows/)，完成安装后，直接通过pip命令安装上述PyTorch及项目依赖包即可。
+若未安装conda，可直接下载官方Python 3.9.21安装包：[Windows 版 Python 版本](https://www.python.org/downloads/windows/)，完成安装后，直接通过pip命令安装上述PyTorch及项目依赖包即可。
 
-### 目录说明
+### 目录文件说明
 
-项目解压后，各目录承担不同的功能，熟悉目录结构有助于后续数据准备、脚本运行等操作。项目目录结构如下：
+项目解压后，各目录与文件承担不同的功能，熟悉目录结构有助于后续数据准备、脚本运行等操作。项目目录与文件结构如下：
 
-![项目目录结构](.\doc\目录结构.png)
+![项目目录结构](.\doc\目录结构1.png)
 
 ## 训练模型
 
 ### 数据准备
 
-项目的data目录用于存放模型训练所需的数据集，默认包含训练集、验证集和测试集三个子目录，以及data.yaml配置文件，具体说明如下：
+项目的data目录用于存放模型训练所需的数据集，我这里准备了300多张训练人的数据集，大家可以拿去做测试。默认包含训练集、验证集和测试集三个子目录，以及data.yaml配置文件，具体说明如下：
 
 - train：训练集，存放用于模型训练的图像及对应的标签文件
 - val：验证集，用于在训练过程中评估模型性能，指导模型参数优化
@@ -85,9 +87,9 @@ data.yaml文件用于指定数据集路径、类别数量及类别名称，是�
 
 ```yml
 # 修改为你自己的目录
-train: C:\Users\dxzw-xm16\Desktop\yolov8-train\data\train\images
-val: C:\Users\dxzw-xm16\Desktop\yolov8-train\data\val\images
-test: C:\Users\dxzw-xm16\Desktop\yolov8-train\data\test\images
+train: C:\Users\kjq\Desktop\yolov8-train\data\train\images
+val: C:\Users\kjq\Desktop\yolov8-train\data\val\images
+test: C:\Users\kjq\Desktop\yolov8-train\data\test\images
 
 # 类别数量
 nc: 1
@@ -99,7 +101,7 @@ names:
 
 ### 配置train.py训练参数并启动
 
-train.py文件包含模型加载、训练参数设置及训练启动逻辑，可根据自身设备情况和训练需求调整参数：
+train.py文件包含模型加载、训练参数设置及训练启动逻辑，可根据自身设备情况和训练需求调整参数，更多训练参数请参见官方文档[使用 Ultralytics YOLO 进行模型训练 - Ultralytics YOLO 文档](https://docs.ultralytics.com/zh/modes/train/#train-settings)
 
 ```python
 from ultralytics import YOLO
@@ -143,11 +145,11 @@ python ./train.py
 
 ![](.\doc\正在训练.png)
 
-## 简单测试模型
+## 简单测试
 
 模型训练完成后，会在项**目根目录生成runs/detect/train文件夹**，需通过图像、视频流等多种方式测试模型性能，验证模型的检测效果。项目提供了3个测试脚本，分别适用于不同的测试场景，具体操作如下：
 
-### 单图像测试（test_img.py）
+### 图像推理测试（test_img.py）
 
 ```python
 # 加载模型
@@ -161,7 +163,7 @@ model.predict(source='./images/2008_002378.jpg', save=True, conf=0.6)
 
 ![](.\doc\img.jpg)
 
-### 视频流测试（test_video.py）
+### 视频流推理测试（test_video.py）
 
 该脚本支持摄像头实时流或RTSP流测试，需配合ffmpeg和mediamtx工具使用，适用于动态目标检测场景：
 
@@ -180,19 +182,23 @@ process = ffmpeg.input('pipe:', format='rawvideo', pix_fmt='bgr24', s=f'{width}x
 
 启动程序
 
+注意：启动视频流推理之前一定确保自己电脑上有[下载FFmpeg](https://ffmpeg.org/download.html)与[下载mediamtx](https://github.com/bluenviron/mediamtx/releases/tag/v1.11.2)，命令运行ffmpeg检查版本。
+
 ```python
 python ./test_video.py
 ```
 
-启动后，可通过浏览器访问mediamtx的WebRTC接口查看检测结果：http://localhost:8889/camera2/（8889为mediamtx默认的WebRTC访问端口）。mediamtx支持多种访问接口，可根据需求选择。
+启动后，可通过浏览器访问mediamtx提供的WebRTC接口查看检测结果：http://localhost:8889/camera2/（8889为mediamtx默认的WebRTC访问端口）。mediamtx支持多种访问接口，可根据需求选择。
 
 ### 分块推理测试（test_sahi.py）
 
-该脚本采用SAHI分块推理技术，适用于大尺寸图像或小目标检测场景。**通过将图像分块后分别推理，再融合结果，可提升小目标的检测精度，但相应的会消耗更多GPU资源**，具体可以参考官方文档[Ultralytics 文档：将 YOLO11 与 SAHI 结合使用于切片推理](https://docs.ultralytics.com/zh/guides/sahi-tiled-inference/)。使用方式可参考脚本内部注释，直接运行即可：
+SAHI分块推理技术，适用于大尺寸图像或小目标检测场景。**通过将图像分块后分别推理，再融合结果，可提升小目标的检测精度，但相应的会消耗更多GPU资源**，具体可以参考官方文档[Ultralytics 文档：将 YOLO11 与 SAHI 结合使用于切片推理](https://docs.ultralytics.com/zh/guides/sahi-tiled-inference/)。使用方式可参考脚本内部注释，直接运行即可：
 
 ```sh
 python ./test_sahi.py
 ```
+
+下面是普通推理和分块推理对比图，左边为分块推理，右边是普通推理，可以看到明显分块推理能识别更多目标。是否使用分块推理，根据自己需求来，实际情况还跟图像分辨率有关。
 
 ![](.\doc\sahi.png)
 
@@ -204,7 +210,7 @@ python ./test_sahi.py
 
 - **精确率(Precision)**: 模型预测为“正例”的结果中，实际是正例的比例。用于评估模型避免假阳性（误报）的能力，准确率越高，误报越少。
 - **召回率(Recall)**: 实际是正例的样本中，被模型正确预测的比例。用于评估模型避免假阴性（漏报）的能力，召回率越高，漏报越少。
-- **置信度(Confidence)**：模型对预测结果的信任程度，置信度阈值可调整，用于筛选可靠的检测结果。
+- **置信度(Confidence)**：模型对预测结果的信任程度，置信度可调整，用于筛选可靠的检测结果。
 - **交并比 (IoU):** IoU 是一种量化预测边界框与真实边界框之间重叠程度的度量。
 - **平均精度 (AP)：**AP 计算精度-召回曲线下的面积，提供一个单一值，概括了模型的精度和召回性能。
 - **平均精度均值 (mAP):** mAP 通过计算多个对象类别的平均 AP 值来扩展 AP 的概念。这在多类对象 detect 场景中非常有用，可以提供对模型性能的全面评估。
@@ -216,7 +222,9 @@ python ./test_sahi.py
 
 ### 使用test测试集生成指标
 
-为什么需要测试集生成性能指标，在runs/detect/train目录下的指标是通过验证集val来生成的，而val在训练过程中起到调节模型训练方向的作用，每个轮次结束都需要val来验证，从而调整下一个轮次的训练策略，所以模型在验证集上面的表现没有说服力，就需要测试集来验证模型。代码如下：
+为什么需要test测试集生成性能指标
+
+> 我们训练 YOLOv8 后，在`runs/detect/train`目录下生成的所有性能指标（精确率、召回率、F1、mAP、混淆矩阵等），均是基于**验证集 (val)** 计算得到的。而验证集在模型训练流程中，承担的核心作用是**指导模型训练方向、参与训练策略迭代**：训练的每一个轮次（Epoch）结束后，都会用验证集评估当前模型效果，并基于验证集的表现反向调整模型的权重参数、学习率等训练策略。正因为验证集全程参与了模型的训练优化过程，模型会在训练中不断 “适配” 验证集的特征分布，因此**模型在验证集上的性能指标存在一定的偏向性，无法客观、真实地反映模型的泛化能力，该指标结果不具备绝对的说服力**。
 
 ```python
 from ultralytics import YOLO
@@ -244,28 +252,85 @@ python ./test_val.py
 
 ![](.\doc\confusion_matrix.png)
 
+混淆矩阵的核心是 “预测类别” 与 “真实类别” 的匹配情况：
+
+- 行（左侧）：模型**预测的类别**（`person`/`background`）
+- 列（下方）：样本**真实的类别**（`person`/`background`）
+
+| 预测 \ 真实 | person（真实是人） | background（真实是背景） |
+| ----------- | ------------------ | ------------------------ |
+| person      | 51（真阳性，TP）   | 24（假阳性，FP）         |
+| background  | 15（假阴性，FN）   | 0（真阴性，TN）          |
+
+- 对 “person” 的漏检较多：真实是人的样本中，有 15 个被错误预测成了背景。
+- 对 “person” 的错误较多：真实是背景的样本中，有24个背景被错误监测成"person"。
+
 #### F1分数曲线
 
 ![](.\doc\F1_curve.png)
 
 这张图里的F1 是 F1 分数，是评估模型检测性能的核心指标之一。
+
+- 横轴：模型预测结果的置信度（0 到 1，越高代表模型对预测结果越 “确定”）
+- 纵轴：对应置信度下的 F1 分数（F1 是精确率和召回率的综合指标，越高代表模型性能越好）
+
 它是精确率（Precision）和召回率（Recall）的调和平均数，公式为：`F1=2× [(Precision+Recall)/(Precision×Recall)]`
 
-精确率：模型预测为 “正例” 的结果中，实际是正例的比例（避免 “误报”）；
-召回率：实际是正例的样本中，被模型正确预测的比例（避免 “漏报”）。
 F1 分数的取值范围是0~1，越接近 1 说明模型在 “精确率” 和 “召回率” 之间的平衡越好。
+
+此图展示置信度敏感度过高：当置信度超过 0.4 后，F1 分数快速下降；到置信度 1.0 时 F1 直接降到 0，说明模型对 “高置信度预测” 的准确性很差，要么是高置信度的预测大量出错，要么是高置信度的样本极少。
 
 #### 精确率曲线
 
 ![](.\doc\P_curve.png)
 
+这是精确率 - 置信度曲线，用来展示 “模型预测置信度” 和 “精确率” 的关系：
+
+- 横轴：模型预测结果的置信度（0 到 1，置信度越高，模型对预测结果的 “确定性” 越强）
+- 纵轴：对应置信度下的**精确率**（精确率 = 预测正确的正样本数 / 所有预测为正的样本数，反映 “预测为某类的结果里，真正是该类的比例”）
+
+接下来分析这张图：
+
+1. **高置信度下精确率表现好**：当置信度≥0.923 时，精确率能达到 1.0，说明模型对 “高置信度的预测” 准确性很高。
+2. **低置信度下精确率差**：置信度＜0.2 时，精确率接近 0，说明低置信度的预测大部分是错误的。
+
 #### 召回率曲线
 
 ![](.\doc\R_curve.png)
 
+这是召回率 - 置信度曲线，展示 “模型预测置信度” 和 “召回率” 的关系：
+
+- 横轴：模型预测的置信度（0 到 1，置信度越高，模型对预测结果越确定）
+- 纵轴：对应置信度下的**召回率**（召回率 = 预测正确的正样本数 / 所有真实正样本数，反映 “真实的目标里，被模型成功识别出来的比例”）
+
+接下来分析这张图：
+
+1. **置信度与召回率负相关**：置信度从 0 升到 1 的过程中，召回率从 0.91 快速下降到 0，说明高置信度下模型会漏掉大量真实样本，低置信度才能覆盖更多真实目标。
+2. **与精确率曲线矛盾**：低置信度召回率高，但精确率极低（背景误判多）；高置信度精确率高，但召回率极低（目标漏检多）—— 模型在 “覆盖更多目标” 和 “预测更准确” 之间的平衡很差。
+
 #### 训练结果曲线集
 
 ![](.\doc\results.png)
+
+首先说明这张图的含义：这是 Yolov8 训练过程中的**损失与指标曲线汇总图**，包含训练 / 验证阶段的损失、以及模型性能指标，横轴是训练轮次。
+
+各子图的核心含义：
+
+- `train/val/box_loss`：预测框位置的损失（值越低，框定位越准）
+- `train/val/cls_loss`：类别预测的损失（值越低，类别判断越准）
+- `train/val/df_loss`：分布焦点损失（辅助框和类别预测的损失）
+- `metrics/precision/recall`：精确率 / 召回率（值越高，性能越好）
+- `metrics/mAP50/mAP50-95`：平均精度（mAP50 是 IoU=0.5 时的精度，mAP50-95 是多 IoU 下的平均，值越高性能越好）
+
+分析训练结果：
+
+1. 训练损失正常下降，但验证损失波动大：训练的 box/cls/df_loss 都在持续降低（说明模型在训练集上学到了特征），但验证损失（val/*_loss）波动明显（尤其是后期），说明模型
+
+   泛化能力弱，对验证集的适配性差。
+
+2. 性能指标（精确率 / 召回率 /mAP）波动大：这些指标在训练过程中上下震荡（没有稳定上升），说明模型训练不稳定，或者数据分布有问题（比如背景样本少、标注噪声）。
+
+3. 最终 mAP 指标不高：mAP50 最终大概在 0.7 左右，mAP50-95 在 0.4 左右，结合之前的混淆矩阵，核心问题还是 ** 类别不平衡（背景样本少）** 导致模型性能受限。
 
 ## 优化思路
 
